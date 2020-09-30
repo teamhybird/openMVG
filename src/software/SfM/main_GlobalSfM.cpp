@@ -75,6 +75,9 @@ int main(int argc, char **argv)
     << "[-r|--rotationAveraging]\n"
       << "\t 1 -> L1 minimization\n"
       << "\t 2 -> L2 minimization (default)\n"
+      #ifdef OPENMVG_SHONAN_AVERAGING
+      << "\t 4 -> Global Optimal averaging (Shonan Averaging) \n"
+      #endif
     << "[-t|--translationAveraging]:\n"
       << "\t 1 -> L1 minimization\n"
       << "\t 2 -> L2 minimization of sum of squared Chordal distances\n"
@@ -100,8 +103,13 @@ int main(int argc, char **argv)
     return EXIT_FAILURE;
   }
 
+  #ifdef OPENMVG_SHONAN_AVERAGING
+  if (iRotationAveragingMethod < ROTATION_AVERAGING_L1 ||
+      iRotationAveragingMethod > ROTATION_AVERAGING_SHONAN )  {
+  #else
   if (iRotationAveragingMethod < ROTATION_AVERAGING_L1 ||
       iRotationAveragingMethod > ROTATION_AVERAGING_L2 )  {
+  #endif 
     std::cerr << "\n Rotation averaging method is invalid" << std::endl;
     return EXIT_FAILURE;
   }

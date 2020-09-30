@@ -16,6 +16,8 @@
 
 #include "third_party/histogram/histogram.hpp"
 
+#include <gtsam/sfm/ShonanAveraging.h>
+
 namespace openMVG{
 namespace sfm{
 
@@ -132,6 +134,43 @@ bool GlobalSfM_Rotation_AveragingSolver::Run(
       }
     }
     break;
+    #ifdef OPENMVG_SHONAN_AVERAGING
+    case ROTATION_AVERAGING_SHONAN: 
+    {
+      using namespace gtsam;
+      auto lm_params = LevenbergMarquardtParams::CeresDefaults(); //this is implicit in the constructor 
+      ShonanAveragingParameters3 params(lm_params);
+      
+      // fill the vector of measurments with relative rotations
+      auto noise_model = noiseModel::Isotropic::Sigma(3, 0.0872665); //5 degree noise
+      std::vector<BinaryMeasurement<Rot3>> measurements;
+      for(const auto & rot : relativeRotations) {
+        measurements.push_back(BinaryMeasurement<Rot3>(rot.i, rot.j, Rot3(rot.Rij), noise_model));
+      }
+      
+
+      ShonanAveraging3 averaging(measurements, params);
+      // Random initial values, it should be ok
+      auto initial_values = averaging.initializeRandomly();
+      auto result = averaging.run(initial_values, 3, 30);
+      bSuccess = true; // Shonan won't return an indicator if it fails
+
+      auto gauge = result.first.at(0).cast<Rot3>().inverse();      
+      for(const auto &res : result.first) {
+        vec_globalR[res.key] = (gauge * res.value.cast<Rot3>()).matrix();
+      }
+
+      // save kept pairs (restore original pose indices using the backward reindexing)
+      for (RelativeRotations::iterator iter = relativeRotations.begin();  iter != relativeRotations.end(); ++iter)
+      {
+        RelativeRotation & rel = *iter;
+        rel.i = reindexBackward[rel.i];
+        rel.j = reindexBackward[rel.j];
+      }
+      used_pairs = getPairs(relativeRotations);
+    }
+    break;
+    #endif
     default:
     std::cerr
       << "Unknown rotation averaging method: "

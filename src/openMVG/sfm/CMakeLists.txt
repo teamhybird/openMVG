@@ -29,6 +29,12 @@ target_link_libraries(openMVG_sfm
     ${OPENMVG_LIBRARY_DEPENDENCIES}
 )
 
+if(OpenMVG_USE_GTSAM)
+  target_compile_options(openMVG_sfm PUBLIC "-DOPENMVG_SHONAN_AVERAGING")
+  target_link_libraries(openMVG_sfm PUBLIC gtsam)
+  target_include_directories(openMVG_sfm PUBLIC ${GTSAM_INCLUDE_DIR}) 
+endif()
+
 target_link_libraries(openMVG_sfm
   LINK_PRIVATE
     ${CERES_LIBRARIES}

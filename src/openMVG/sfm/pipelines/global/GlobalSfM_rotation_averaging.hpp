@@ -17,7 +17,10 @@ namespace sfm {
 enum ERotationAveragingMethod
 {
   ROTATION_AVERAGING_L1 = 1,
-  ROTATION_AVERAGING_L2 = 2
+  ROTATION_AVERAGING_L2 = 2,
+#ifdef OPENMVG_SHONAN_AVERAGING
+  ROTATION_AVERAGING_SHONAN = 4,
+#endif
 };
 
 enum ERelativeRotationInferenceMethod

@@ -216,7 +216,7 @@ MACRO(UNIT_TEST NAMESPACE NAME EXTRA_LIBS)
                                ${CMAKE_SOURCE_DIR}/third_party)
     target_link_libraries(${NAMESPACE}_test_${NAME}
                           ${EXTRA_LIBS} # Extra libs MUST be first.
-                          CppUnitLite)
+                          CppUnitLiteMVG)
     add_test(NAME ${NAMESPACE}_test_${NAME} WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
              COMMAND $<TARGET_FILE:${NAMESPACE}_test_${NAME}>)
   target_compile_definitions(${NAMESPACE}_test_${NAME}
@@ -275,6 +275,17 @@ if (NOT Ceres_FOUND)
     FILE(READ "${CMAKE_CURRENT_SOURCE_DIR}/third_party/ceres-solver/VERSION" CERES_CONFIG)
     STRING(REGEX REPLACE "version ([0-9.]+).*" "\\1" CERES_VERSION ${CERES_CONFIG})
   set(CERES_LIBRARIES openMVG_ceres)
+endif()
+
+
+# ==============================================================================
+# GTSAM
+# ==============================================================================
+find_package(GTSAM)
+if (NOT GTSAM_FOUND OR GTSAM_VERSION VERSION_LESS "3.0.0")
+    message(STATUS "GTSAM was not found, Shonan rotation averaging will not be available")
+else()
+  set(OpenMVG_USE_GTSAM ON)
 endif()
 
 # ==============================================================================
