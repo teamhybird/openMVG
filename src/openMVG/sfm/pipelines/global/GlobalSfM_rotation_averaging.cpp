@@ -16,7 +16,9 @@
 
 #include "third_party/histogram/histogram.hpp"
 
+#ifdef OPENMVG_SHONAN_AVERAGING
 #include <gtsam/sfm/ShonanAveraging.h>
+#endif
 
 namespace openMVG{
 namespace sfm{
@@ -141,7 +143,7 @@ bool GlobalSfM_Rotation_AveragingSolver::Run(
       auto lm_params = LevenbergMarquardtParams::CeresDefaults(); //this is implicit in the constructor 
       ShonanAveragingParameters3 params(lm_params);
       
-      // fill the vector of measurments with relative rotations
+      // fill the vector of measurements with relative rotations
       auto noise_model = noiseModel::Isotropic::Sigma(3, 0.0872665); //5 degree noise
       std::vector<BinaryMeasurement<Rot3>> measurements;
       for(const auto & rot : relativeRotations) {
