@@ -63,6 +63,7 @@ int main(int argc, char **argv)
   std::string sOutDir = "";
   std::string sMatchesOutDir;
   std::string sQueryDir;
+  std::string sSfM_Data_Intrinsics_Filename;
   double dMaxResidualError = std::numeric_limits<double>::infinity();
   int i_User_camera_model = cameras::PINHOLE_CAMERA_RADIAL3;
   bool bUseSingleIntrinsics = false;
@@ -83,6 +84,7 @@ int main(int argc, char **argv)
   cmd.add( make_switch('s', "single_intrinsics"));
   cmd.add( make_switch('e', "export_structure"));
   cmd.add( make_option('R', resection_method, "resection_method"));
+  cmd.add( make_option('I', sSfM_Data_Intrinsics_Filename, "input_intrinsics_file") );
 
 #ifdef OPENMVG_USE_OPENMP
   cmd.add( make_option('n', iNumThreads, "numThreads") );
@@ -126,6 +128,7 @@ int main(int argc, char **argv)
 #ifdef OPENMVG_USE_OPENMP
     << "[-n|--numThreads] number of thread(s)\n"
 #endif
+    << "[-I|--input_intrinsics_file] (Hybird) path to a SfM_Data file containing intrinsics for all query images.\n"
     << std::endl;
 
     std::cerr << s << std::endl;
@@ -226,10 +229,27 @@ int main(int argc, char **argv)
   if (!stlplus::folder_exists(sOutDir))
     stlplus::folder_create(sOutDir);
 
-  if (bUseSingleIntrinsics && sfm_data.GetIntrinsics().size() != 1)
+
+  SfM_Data intrinsics_data;
+  if (!sSfM_Data_Intrinsics_Filename.empty())
+  {
+    // Load input intrinsics as a SfM_Data scene
+    if (!Load(intrinsics_data, sSfM_Data_Intrinsics_Filename, ESfM_Data(INTRINSICS))) {
+      std::cerr << std::endl
+        << "The input intrinsics file \""<< sSfM_Data_Intrinsics_Filename << "\" cannot be read." << std::endl;
+      return EXIT_FAILURE;
+    }
+    bUseSingleIntrinsics = true;
+  }
+  else if (bUseSingleIntrinsics)
+  {
+    intrinsics_data.intrinsics = sfm_data.GetIntrinsics();
+  }
+
+  if (bUseSingleIntrinsics && intrinsics_data.GetIntrinsics().size() != 1)
   {
     std::cout << "More than one intrinsics to compare to in input scene "
-              << " => Consider intrinsics as unkown." << std::endl;
+              << " => Consider intrinsics as unknown." << std::endl;
   }
 
   //-- Localization
@@ -352,14 +372,14 @@ int main(int argc, char **argv)
     std::shared_ptr<cameras::IntrinsicBase> optional_intrinsic;
     if (bUseSingleIntrinsics)
     {
-      if (sfm_data.GetIntrinsics().size() != 1)
+      if (intrinsics_data.GetIntrinsics().size() != 1)
       {
-        std::cerr << "You choose the single intrinsic mode but the sfm_data scene,"
-          <<" have too few or too much intrinsics."
+        std::cerr << "You chose the single intrinsic mode but the sfm_data scene,"
+          <<" has too few or too many intrinsics."
           << std::endl;
         continue;
       }
-      optional_intrinsic = sfm_data.GetIntrinsics().at(0);
+      optional_intrinsic = intrinsics_data.GetIntrinsics().at(0);
       if (imageGray.Width() != optional_intrinsic->w() || optional_intrinsic->h() != imageGray.Height())
       {
         std::cout << "The provided image does not have the same size as the camera model you want to use." << std::endl;
