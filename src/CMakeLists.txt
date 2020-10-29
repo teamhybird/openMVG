@@ -283,6 +283,7 @@ endif()
 # - internal by default (flann),
 # - external if FLANN_INCLUDE_DIR_HINTS and a valid Flann setup is found
 # ==============================================================================
+## cpm find_library(LZ4_LIBRARIES NAMES liblz4.so HINTS "lz4/lib")
 if (NOT DEFINED FLANN_INCLUDE_DIR_HINTS)
   set(FLANN_INCLUDE_DIR_HINTS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/flann/src/cpp)
   set(OpenMVG_USE_INTERNAL_FLANN ON)

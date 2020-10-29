@@ -117,7 +117,7 @@ bool GlobalSfMReconstructionEngine_RelativeMotions::Process() {
     const std::set<IndexT> set_remainingIds = graph::CleanGraph_KeepLargestBiEdge_Nodes<Pair_Set, IndexT>(pairs);
     if (set_remainingIds.empty())
     {
-      std::cout << "Invalid input image graph for global SfM" << std::endl;
+      std::cout << "Invalid input image graph for global SfM. There were " << pairs.size() << " pairs." << std::endl;
       return false;
     }
     KeepOnlyReferencedElement(set_remainingIds, matches_provider_->pairWise_matches_);

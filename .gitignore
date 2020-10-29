@@ -12,3 +12,5 @@
 build*
 *.out
 docs/openmvg.pdf
+.vscode
+openMVG_Build

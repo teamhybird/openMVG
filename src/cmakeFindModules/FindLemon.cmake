@@ -2,7 +2,7 @@
 #                  Find Lemon Library
 #----------------------------------------------------------
 
-FIND_PATH(LEMON_DIR list_graph.h
+FIND_PATH(LEMON_DIR lemon/list_graph.h
     HINTS "${LEMON_ROOT}" "$ENV{LEMON_ROOT}" "${LEMON_INCLUDE_DIR_HINTS}"
     PATHS "$ENV{PROGRAMFILES}/lemon" "$ENV{PROGRAMW6432}/lemon"
     PATH_SUFFIXES lemon
