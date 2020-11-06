@@ -545,18 +545,32 @@ int main(int argc, char **argv)
     {
       openMVG::sfm::SfM_Data used;
       used.s_root_path = sfm_data.s_root_path;
+      // Make the keys of the view contiguous by renumbering them
+      std::map<IndexT, IndexT> renum;
+      IndexT iKey = 0;
       for (openMVG::IndexT iImage : whichfiles)
       {
-        used.views[iImage] = sfm_data.views.at(iImage);
+        renum[iImage] = iKey;
+        used.views[iKey] = sfm_data.views.at(iImage);
+        used.views[iKey]->id_view = iKey;
+        ++iKey;
       }
       for (openMVG::IndexT iInlier : used_landmarks)
       {
         if (sfm_data.structure.count(iInlier))
         {
           const openMVG::sfm::Landmark &lm = sfm_data.structure.at(iInlier);
-          used.structure[iInlier] = lm;
+          openMVG::sfm::Landmark lm2;
+          lm2.X = lm.X;
+          for (const auto& oo : lm.obs)
+          {
+            IndexT iNew = renum[oo.first];
+            lm2.obs[iNew] = oo.second;
+          }
+          used.structure[iInlier] = lm2;
         }
       }
+      
       used.intrinsics = sfm_data.intrinsics;
 
       if (!Save(used, sUsed_Landmarks_Filename.c_str(), ESfM_Data(VIEWS | STRUCTURE | INTRINSICS)))
