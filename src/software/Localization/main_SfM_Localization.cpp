@@ -553,6 +553,7 @@ int main(int argc, char **argv)
         renum[iImage] = iKey;
         used.views[iKey] = sfm_data.views.at(iImage);
         used.views[iKey]->id_view = iKey;
+        used.views[iKey]->id_pose = iKey;
         ++iKey;
       }
       for (openMVG::IndexT iInlier : used_landmarks)
