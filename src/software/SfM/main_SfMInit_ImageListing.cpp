@@ -151,6 +151,8 @@ int main(int argc, char **argv)
 
   double focal_pixels = -1.0;
 
+  bool b_reverse_filenames = false;
+
   cmd.add( make_option('i', sImageDir, "imageDirectory") );
   cmd.add( make_option('d', sfileDatabase, "sensorWidthDatabase") );
   cmd.add( make_option('o', sOutputDir, "outputDirectory") );
@@ -161,6 +163,7 @@ int main(int argc, char **argv)
   cmd.add( make_switch('P', "use_pose_prior") );
   cmd.add( make_option('W', sPriorWeights, "prior_weights"));
   cmd.add( make_option('m', i_GPS_XYZ_method, "gps_to_xyz_method") );
+  cmd.add( make_option('R', b_reverse_filenames, "reverse") );
 
   try {
       if (argc == 1) throw std::string("Invalid command line parameter.");
@@ -188,6 +191,9 @@ int main(int argc, char **argv)
       << "[-m|--gps_to_xyz_method] XZY Coordinate system:\n"
       << "\t 0: ECEF (default)\n"
       << "\t 1: UTM\n"
+      << "[-R|--reverse] Add the filenames in reverse order\n"
+      << "\t 0: Ascending filenames (default)\n"
+      << "\t 1: Descending filenames\n"
       << std::endl;
 
       std::cerr << s << std::endl;
@@ -202,7 +208,8 @@ int main(int argc, char **argv)
             << "--focal " << focal_pixels << std::endl
             << "--intrinsics " << sKmatrix << std::endl
             << "--camera_model " << i_User_camera_model << std::endl
-            << "--group_camera_model " << b_Group_camera_model << std::endl;
+            << "--group_camera_model " << b_Group_camera_model << std::endl
+            << "--reverse " << b_reverse_filenames << std::endl;
 
   // Expected properties for each image
   double width = -1, height = -1, focal = -1, ppx = -1,  ppy = -1;
@@ -267,6 +274,8 @@ int main(int argc, char **argv)
 
   std::vector<std::string> vec_image = stlplus::folder_files( sImageDir );
   std::sort(vec_image.begin(), vec_image.end());
+  if (b_reverse_filenames)
+    std::reverse(vec_image.begin(), vec_image.end());
 
   // Configure an empty scene with Views and their corresponding cameras
   SfM_Data sfm_data;
