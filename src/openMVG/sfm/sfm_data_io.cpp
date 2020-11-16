@@ -58,13 +58,23 @@ bool ValidIds(const SfM_Data & sfm_data, ESfM_Data flags_part)
   // Check if defined intrinsic & extrinsic are at least connected to views
   bool bRet = true;
   if (bCheck_Intrinsic)
-    bRet &= set_id_intrinsics.size() == reallyDefined_id_intrinsics.size();
-
+  {
+    if (set_id_intrinsics.size() != reallyDefined_id_intrinsics.size())
+    {
+      bRet = false;
+      std::cout << "There is orphan intrinsics data: " << set_id_intrinsics.size()
+         << " defined but " << reallyDefined_id_intrinsics.size() << " defined and wanted." << std::endl;
+    }
+  }
   if (bCheck_Extrinsic)
-    bRet &= set_id_extrinsics.size() == reallyDefined_id_extrinsics.size();
-
-  if (bRet == false)
-    std::cout << "There is orphan intrinsics data or poses (do not depend on any view)" << std::endl;
+  {
+    if (set_id_extrinsics.size() != reallyDefined_id_extrinsics.size())
+    {
+      bRet = false;
+      std::cout << "There is orphan extrinsics data: " << set_id_extrinsics.size()
+         << " defined but " << reallyDefined_id_extrinsics.size() << " defined and wanted." << std::endl;
+    }
+  }
 
   return bRet;
 }
