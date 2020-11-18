@@ -51,6 +51,7 @@ std::string Matches2SVGString
   const features::PointFeatures & right_features,
   const matching::IndMatches & matches,
   const bool b_vertical_display = true,
+  const bool b_relative_lines = false,
   const double feature_circle_radius = 4.0,
   const double stroke_size = 2.0
 );
@@ -88,6 +89,7 @@ bool Matches2SVG
   const matching::IndMatches & matches,
   const std::string & svg_filename,
   const bool b_vertical_display = true,
+  const bool b_relative_lines = false,
   const double feature_circle_radius = 4.0,
   const double stroke_size = 2.0
 );

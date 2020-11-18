@@ -74,6 +74,7 @@ void MatchingPairGraphicsView::mousePressEvent(QMouseEvent * event)
 
         // Show pairwise correspondences
         const bool bVertical = false;
+        const bool bRelative = main_frame->isRelativeMode();
         const std::string svg_string =
           Matches2SVGString
           (
@@ -84,7 +85,8 @@ void MatchingPairGraphicsView::mousePressEvent(QMouseEvent * event)
             {view_J->ui_width, view_J->ui_height},
             doc.feats_provider->getFeatures(view_J->id_view),
             pairwise_matches,
-            bVertical
+            bVertical,
+            bRelative
           );
         QSvgWidget *svg = new QSvgWidget;
         svg->load(QByteArray(svg_string.c_str()));

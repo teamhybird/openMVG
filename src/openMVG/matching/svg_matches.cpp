@@ -63,6 +63,7 @@ std::string Matches2SVGString
   const features::PointFeatures & right_features,
   const matching::IndMatches & matches,
   const bool b_vertical_display,
+  const bool b_relative_lines,
   const double feature_circle_radius,
   const double stroke_size
 )
@@ -83,6 +84,14 @@ std::string Matches2SVGString
     b_vertical_display ?
     left_image_size.second :
     0;
+  const size_t svg_offset_x_lines =
+    b_relative_lines ?
+    0 : 
+    svg_offset_x;
+  const size_t svg_offset_y_lines =
+    b_relative_lines ?
+    0 : 
+    svg_offset_y;
 
   svg::svgDrawer svgStream(svg_w, svg_h);
 
@@ -111,7 +120,7 @@ std::string Matches2SVGString
     // Draw the line between the corresponding feature positions
     svgStream.drawLine(
       L.x(), L.y(),
-      R.x() + svg_offset_x, R.y() + svg_offset_y,
+      R.x() + svg_offset_x_lines, R.y() + svg_offset_y_lines,
       svg::svgStyle().stroke(colors.back(), stroke_size));
   }
   // 2. Then display features circles
@@ -141,6 +150,7 @@ bool Matches2SVG
   const matching::IndMatches & matches,
   const std::string & svg_filename,
   const bool b_vertical_display,
+  const bool b_relative_lines,
   const double feature_circle_radius,
   const double stroke_size
 )
@@ -156,6 +166,7 @@ bool Matches2SVG
       right_features,
       matches,
       b_vertical_display,
+      b_relative_lines,
       feature_circle_radius,
       stroke_size
     );

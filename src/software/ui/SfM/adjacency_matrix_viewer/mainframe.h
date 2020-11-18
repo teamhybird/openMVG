@@ -28,6 +28,7 @@ public:
   );
 
   QGraphicsView *view() const;
+  bool isRelativeMode() { return relative_mode; }
 
 public slots:
   void zoomIn(int level = 1);
@@ -38,6 +39,7 @@ private slots:
   void setResetButtonEnabled();
   void setupMatrix();
   void togglePointerMode();
+  void toggleRelativeMode();
   void toggleOpenGL();
   void toggleAntialiasing();
 
@@ -48,8 +50,12 @@ private:
     *select_mode_button,
     *opengl_button,
     *antialias_button,
-    *reset_button;
+    *reset_button,
+    *relative_mode_button;
   QSlider *zoom_slider;
 
   const Document & doc;
+
+  // CPM
+  bool relative_mode = false;
 };

@@ -83,6 +83,10 @@ MainFrame::MainFrame(const QString &name, const Document & doc, QWidget *parent)
 #else
   opengl_button->setEnabled(false);
 #endif
+  relative_mode_button = new QToolButton;
+  relative_mode_button->setText(tr("Relative"));
+  relative_mode_button->setCheckable(true);
+  relative_mode_button->setChecked(false);
 
   //
   // Build the window layout
@@ -99,6 +103,7 @@ MainFrame::MainFrame(const QString &name, const Document & doc, QWidget *parent)
   label_layout->addWidget(select_mode_button);
   label_layout->addWidget(drag_mode_button);
   label_layout->addStretch();
+  label_layout->addWidget(relative_mode_button);
   label_layout->addWidget(antialias_button);
   label_layout->addWidget(opengl_button);
 
@@ -125,6 +130,7 @@ MainFrame::MainFrame(const QString &name, const Document & doc, QWidget *parent)
   connect(opengl_button, SIGNAL(toggled(bool)), this, SLOT(toggleOpenGL()));
   connect(zoom_in_icon, SIGNAL(clicked()), this, SLOT(zoomIn()));
   connect(zoom_out_icon, SIGNAL(clicked()), this, SLOT(zoomOut()));
+  connect(relative_mode_button, SIGNAL(toggled(bool)), this, SLOT(toggleRelativeMode()));
 
   setupMatrix();
 }
@@ -188,4 +194,9 @@ void MainFrame::zoomIn(int level)
 void MainFrame::zoomOut(int level)
 {
   zoom_slider->setValue(zoom_slider->value() - level);
+}
+
+void MainFrame::toggleRelativeMode()
+{
+  relative_mode = !relative_mode;
 }
