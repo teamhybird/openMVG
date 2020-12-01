@@ -23,7 +23,7 @@ void RemoveRootPath(SfM_Data &sfm_data)
 {
   for (auto &view : sfm_data.views)
   {
-    view.second->s_Img_path = sfm_data.s_root_path + view.second->s_Img_path;
+    view.second->s_Img_path = stlplus::create_filespec(sfm_data.s_root_path, view.second->s_Img_path);
   }
   sfm_data.s_root_path = "";
 }

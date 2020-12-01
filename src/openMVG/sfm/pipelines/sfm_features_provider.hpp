@@ -59,7 +59,7 @@ struct Features_Provider
         std::unique_ptr<features::Regions> regions(region_type->EmptyClone());
         if (!stlplus::file_exists(featFile) || !regions->LoadFeatures(featFile))
         {
-          std::cerr << "Invalid feature files for the view: " << sImageName << std::endl;
+          std::cerr << "Invalid feature files (" << featFile << ") for the view (" << sImageName << ")" << std::endl;
 #ifdef OPENMVG_USE_OPENMP
       #pragma omp critical
 #endif
