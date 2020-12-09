@@ -93,10 +93,10 @@ std::string Matches2SVGString
   int svg_offset_x_lines, svg_offset_y_lines;
   if (b_relative_lines) // Relative mode - show the direction of movement
   {
-    svg_ratio_x_lines = left_image_size.first / float(right_image_size.first*svg_ratio_image);
-    svg_ratio_y_lines = left_image_size.second / float(right_image_size.second*svg_ratio_image);
-    svg_offset_x_lines = (right_image_size.first*svg_ratio_image - left_image_size.first) * svg_ratio_x_lines * 0.5f;
-    svg_offset_y_lines = (right_image_size.second*svg_ratio_image - left_image_size.second) * svg_ratio_y_lines * 0.5f;
+    svg_ratio_x_lines = svg_ratio_image;
+    svg_ratio_y_lines = svg_ratio_image;
+    svg_offset_x_lines = (right_image_size.first*svg_ratio_image - left_image_size.first) * -0.5f;
+    svg_offset_y_lines = (right_image_size.second*svg_ratio_image - left_image_size.second) * -0.5f;
   }
   else // Absolute mode - connect each corresponding point
   {
