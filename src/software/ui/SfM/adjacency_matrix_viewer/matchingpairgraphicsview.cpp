@@ -15,6 +15,8 @@
 #ifndef QT_NO_WHEELEVENT
 #include <QWheelEvent>
 #endif
+#include <QScreen> // For screen size
+#include <QGuiApplication> // For screen size
 
 #include "openMVG/matching/svg_matches.hpp"
 
@@ -95,7 +97,14 @@ void MatchingPairGraphicsView::mousePressEvent(QMouseEvent * event)
         ofs << view_I->s_Img_path << " " << view_J->s_Img_path
           << " #Matches: " << pairwise_matches.size();
         svg->setWindowTitle( QString::fromStdString(ofs.str()));
-
+        QSize wantedSz = svg->sizeHint();
+        QScreen* pScreen = QGuiApplication::screenAt(svg->mapToGlobal({svg->width()/2,0}));
+        QRect availableScreenSize = pScreen->availableGeometry();
+        float scalex = availableScreenSize.width() * 0.90f / wantedSz.width();
+        float scaley = availableScreenSize.height() * 0.90f / wantedSz.height();
+        float sc = std::min(scalex, scaley);
+        wantedSz *= sc;
+        svg->resize(wantedSz);
         svg->show();
       }
     }

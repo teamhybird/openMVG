@@ -28,9 +28,10 @@ namespace sfm {
 struct Image_Localizer_Match_Data
 {
   Mat34 projection_matrix;
-  Mat pt3D;
-  Mat pt2D;
-  std::vector<uint32_t> vec_inliers;
+  Mat pt3D; // CPM: 3d position of putative matches?
+  Mat pt2D; // CPM: Corresponding 2d positions in query image?
+  std::vector<uint32_t> vec_inliers; // Which of these putative matches is robust?
+  std::vector<uint32_t> vec_landmarks; // Where my points came from (CPM)
   // Upper bound pixel(s) tolerance for residual errors
   double error_max = std::numeric_limits<double>::infinity();
   uint32_t max_iteration = 4096;

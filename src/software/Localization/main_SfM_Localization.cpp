@@ -338,6 +338,7 @@ int main(int argc, char **argv)
 
   int total_num_images = 0;
   std::set<openMVG::IndexT> used_landmarks;
+  std::set<openMVG::IndexT> whichfiles;
 
 #ifdef OPENMVG_USE_OPENMP
   const unsigned int nb_max_thread = (iNumThreads == 0) ? 0 : omp_get_max_threads();
@@ -359,8 +360,8 @@ int main(int argc, char **argv)
     std::cout << "SfM::localization => try with image: " << *iter_image << std::endl;
     std::unique_ptr<Regions> query_regions(regions_type->EmptyClone());
     image::Image<unsigned char> imageGray;
+    const std::string sView_filename = stlplus::create_filespec(sQueryDir, *iter_image);
     {
-      const std::string sView_filename = stlplus::create_filespec(sQueryDir, *iter_image);
       // Try to open image
       if (!image::ReadImage(sView_filename.c_str(), &imageGray))
       {
@@ -438,6 +439,22 @@ int main(int argc, char **argv)
     }
     else
     {
+      if (bExportUsedLandmarks)
+#ifdef OPENMVG_USE_OPENMP
+#pragma omp critical
+#endif
+      {
+        std::cout << "Pt3d size=" << matching_data.pt3D.cols() << "*" << matching_data.pt3D.rows() 
+          << " Pt2d size=" << matching_data.pt2D.cols() << "*" << matching_data.pt2D.rows() << "\n"; 
+        for (uint32_t idx : matching_data.vec_inliers)
+        {
+          uint32_t lm = matching_data.vec_landmarks[idx];
+          used_landmarks.insert(lm);
+          std::cout << "(" << lm << ")";
+        }
+        std::cout << "- adding " << matching_data.vec_inliers.size() << " inliers to get total " << used_landmarks.size() << std::endl;
+      }
+
       const bool b_new_intrinsic = (optional_intrinsic == nullptr);
       // A valid pose has been found (try to refine it):
       // If not intrinsic as input:
@@ -483,12 +500,6 @@ int main(int argc, char **argv)
                                     true, b_new_intrinsic))
       {
         bSuccessfulLocalization = true;
-        if (bExportUsedLandmarks)
-        {
-          for (uint32_t idx : matching_data.vec_inliers)
-            used_landmarks.insert(idx);
-          std::cout << "- adding " << matching_data.vec_inliers.size() << " inliers to get total " << used_landmarks.size() << std::endl;
-        }
       }
       else
       {
@@ -529,12 +540,11 @@ int main(int argc, char **argv)
   std::cout << " Total poses found : " << vec_found_poses.size() << "/" << total_num_images << endl;
   if (bExportUsedLandmarks)
   {
-    std::set<openMVG::IndexT> whichfiles;
-    for (openMVG::IndexT iInlier : used_landmarks)
+    for (openMVG::IndexT iLandmark : used_landmarks)
     {
-      if (sfm_data.structure.count(iInlier))
+      if (sfm_data.structure.count(iLandmark))
       {
-        const Landmark &lm = sfm_data.structure.at(iInlier);
+        const Landmark &lm = sfm_data.structure.at(iLandmark);
         for (const auto &iObs : lm.obs)
         {
           whichfiles.insert(iObs.first);
@@ -542,6 +552,11 @@ int main(int argc, char **argv)
       }
     }
     std::cout << " Total inlier landmarks found : " << used_landmarks.size() << " in " << whichfiles.size() << " images." << std::endl;
+    for (uint32_t iFile : whichfiles)
+    {
+      std::cout << "[" << iFile << "] ";
+    }
+    std::cout << "\n";
     {
       openMVG::sfm::SfM_Data used;
       used.s_root_path = sfm_data.s_root_path;

@@ -68,38 +68,54 @@ std::string Matches2SVGString
   const double stroke_size
 )
 {
-  const size_t svg_w =
-    b_vertical_display ?
-    std::max(left_image_size.first, right_image_size.first) :
-    left_image_size.first + right_image_size.first;
-  const size_t svg_h =
-    b_vertical_display ?
-    left_image_size.second + right_image_size.second :
-    std::max(left_image_size.second, right_image_size.second);
-  const size_t svg_offset_x =
-    b_vertical_display ?
-    0 :
-    left_image_size.first;
-  const size_t svg_offset_y =
-    b_vertical_display ?
-    left_image_size.second :
-    0;
-  const size_t svg_offset_x_lines =
-    b_relative_lines ?
-    0 : 
-    svg_offset_x;
-  const size_t svg_offset_y_lines =
-    b_relative_lines ?
-    0 : 
-    svg_offset_y;
+  // Scale the "right" image up if needed, assuming video images are more likely to be on the RHS
+  float svg_ratio_y = left_image_size.second / float(right_image_size.second);
+  float svg_ratio_x = left_image_size.first / float(right_image_size.first);
+  float svg_ratio_image = std::max(std::min(svg_ratio_x, svg_ratio_y), 1.0f);
 
+  size_t svg_w, svg_h; // width and height (in pixels) of the image
+  size_t svg_offset_x, svg_offset_y; // Offset (in pixels) of the "right" image (left image is at origin)
+  if (b_vertical_display) // "right" image is below the "left" image
+  {
+    svg_w = std::max(left_image_size.first, size_t(right_image_size.first*svg_ratio_image));
+    svg_h = left_image_size.second + right_image_size.second * svg_ratio_image;
+    svg_offset_x = 0;
+    svg_offset_y = left_image_size.second;
+  }
+  else // Side by side display
+  {
+    svg_w = left_image_size.first + right_image_size.first * svg_ratio_image;
+    svg_h = std::max(left_image_size.second, size_t(right_image_size.second*svg_ratio_image));
+    svg_offset_x = left_image_size.first;
+    svg_offset_y = 0;
+  }
+  float svg_ratio_x_lines, svg_ratio_y_lines;
+  int svg_offset_x_lines, svg_offset_y_lines;
+  if (b_relative_lines) // Relative mode - show the direction of movement
+  {
+    svg_ratio_x_lines = left_image_size.first / float(right_image_size.first*svg_ratio_image);
+    svg_ratio_y_lines = left_image_size.second / float(right_image_size.second*svg_ratio_image);
+    svg_offset_x_lines = (right_image_size.first*svg_ratio_image - left_image_size.first) * svg_ratio_x_lines * 0.5f;
+    svg_offset_y_lines = (right_image_size.second*svg_ratio_image - left_image_size.second) * svg_ratio_y_lines * 0.5f;
+  }
+  else // Absolute mode - connect each corresponding point
+  {
+    svg_ratio_x_lines = svg_ratio_image;
+    svg_ratio_y_lines = svg_ratio_image;
+    svg_offset_x_lines = svg_offset_x;
+    svg_offset_y_lines = svg_offset_y;
+  }
+  std::cout << "#Ratio=" << svg_ratio_image << " FirstImage=" << left_image_size.first << "*" << left_image_size.second <<
+   " SecondImage=" << right_image_size.first << "*" << right_image_size.second << "\n";
+  
   svg::svgDrawer svgStream(svg_w, svg_h);
 
   // Draw image side by side
-  svgStream.drawImage(left_image_path, left_image_size.first, left_image_size.second);
-  svgStream.drawImage(right_image_path, right_image_size.first, right_image_size.second,
-    b_vertical_display ? 0 : left_image_size.first,
-    b_vertical_display ? left_image_size.second : 0);
+  svgStream.drawImage(left_image_path, left_image_size.first, left_image_size.second, 0, 0);
+  svgStream.drawImage(right_image_path,
+    right_image_size.first * svg_ratio_image,
+    right_image_size.second * svg_ratio_image,
+    svg_offset_x, svg_offset_y);
 
   std::vector<std::string> colors;
   colors.reserve(matches.size());
@@ -120,8 +136,10 @@ std::string Matches2SVGString
     // Draw the line between the corresponding feature positions
     svgStream.drawLine(
       L.x(), L.y(),
-      R.x() + svg_offset_x_lines, R.y() + svg_offset_y_lines,
-      svg::svgStyle().stroke(colors.back(), stroke_size));
+      R.x() * svg_ratio_x_lines + svg_offset_x_lines,
+      R.y() * svg_ratio_y_lines + svg_offset_y_lines,
+      svg::svgStyle().stroke(colors.back(),
+      stroke_size));
   }
   // 2. Then display features circles
   for (size_t i = 0; i < matches.size(); ++i) {
@@ -133,7 +151,9 @@ std::string Matches2SVGString
       L.x(), L.y(), feature_circle_radius,
       svg::svgStyle().stroke(colors[i], stroke_size));
     svgStream.drawCircle(
-      R.x() + svg_offset_x, R.y() + svg_offset_y, feature_circle_radius,
+      R.x() * svg_ratio_image + svg_offset_x,
+      R.y() * svg_ratio_image + svg_offset_y,
+      feature_circle_radius,
       svg::svgStyle().stroke(colors[i], stroke_size));
   }
   return svgStream.closeSvgFile().str();
