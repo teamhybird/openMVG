@@ -566,7 +566,8 @@ int main(int argc, char **argv)
       for (openMVG::IndexT iImage : whichfiles)
       {
         renum[iImage] = iKey;
-        used.views[iKey] = sfm_data.views.at(iImage);
+        // Clone the view so that we can safely renumber the id without corrupting the make sfm_data
+        used.views[iKey] = std::make_shared<View>(*sfm_data.views.at(iImage));
         used.views[iKey]->id_view = iKey;
         used.views[iKey]->id_pose = iKey;
         ++iKey;
