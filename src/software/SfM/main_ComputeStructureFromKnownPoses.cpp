@@ -60,6 +60,7 @@ int main(int argc, char **argv)
 
   std::string sSfM_Data_Filename;
   std::string sMatchesDir;
+  std::string sFeaturesDir;
   std::string sMatchFile;
   std::string sPairFile;
   std::string sOutFile = "";
@@ -77,6 +78,7 @@ int main(int argc, char **argv)
   cmd.add( make_option('c', ui_max_cache_size, "cache_size") );
   cmd.add( make_switch('d', "direct_triangulation"));
   cmd.add( make_option('t', triangulation_method, "triangulation_method"));
+  cmd.add( make_option('F', sFeaturesDir, "features_dir") ); // CPM
 
   try {
     if (argc == 1) throw std::string("Invalid command line parameter.");
@@ -103,6 +105,7 @@ int main(int argc, char **argv)
     << "\t\t" << static_cast<int>(ETriangulationMethod::LINFINITY_ANGULAR) << ": LINFINITY_ANGULAR\n"
     << "\t\t" << static_cast<int>(ETriangulationMethod::INVERSE_DEPTH_WEIGHTED_MIDPOINT) << ": INVERSE_DEPTH_WEIGHTED_MIDPOINT\n"
     << "\n[Optional]\n"
+    << "[-F]--features_dir] use this directory for features (trailing @ means include parent directory)" 
     << "[-b|--bundle_adjustment] (switch) perform a bundle adjustment on the scene (OFF by default)\n"
     << "[-r|--residual_threshold] maximal pixels reprojection error that will be considered for triangulations (4.0 by default)\n"
     << "[-c|--cache_size]\n"
@@ -114,6 +117,8 @@ int main(int argc, char **argv)
     std::cerr << s << std::endl;
     return EXIT_FAILURE;
   }
+  if (sFeaturesDir.empty())
+    sFeaturesDir = sMatchesDir;
 
   if ( !isValid(static_cast<ETriangulationMethod>(triangulation_method))) {
     std::cerr << "\n Invalid triangulation method" << std::endl;
@@ -155,7 +160,7 @@ int main(int argc, char **argv)
   // Show the progress on the command line:
   C_Progress_display progress;
 
-  if (!regions_provider->load(sfm_data, sMatchesDir, regions_type, &progress)) {
+  if (!regions_provider->load(sfm_data, sFeaturesDir, regions_type, &progress)) {
     std::cerr << std::endl
       << "Invalid regions." << std::endl;
     return EXIT_FAILURE;

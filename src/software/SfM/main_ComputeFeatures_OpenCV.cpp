@@ -411,8 +411,8 @@ int main(int argc, char **argv)
       const View * view = iterViews->second.get();
       const std::string
         sView_filename = stlplus::create_filespec(sfm_data.s_root_path, view->s_Img_path),
-        sFeat = stlplus::create_filespec(sOutDir, stlplus::basename_part(sView_filename), "feat"),
-        sDesc = stlplus::create_filespec(sOutDir, stlplus::basename_part(sView_filename), "desc");
+        sFeat = openMVG::sfm::generate_feature_path(sOutDir, sView_filename, ".feat"),
+        sDesc = openMVG::sfm::generate_feature_path(sOutDir, sView_filename, ".desc");
 
       //If features or descriptors file are missing, compute them
       if (bForce || !stlplus::file_exists(sFeat) || !stlplus::file_exists(sDesc))

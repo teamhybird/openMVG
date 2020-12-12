@@ -47,7 +47,7 @@ int main(int argc, char **argv)
   CmdLine cmd;
 
   std::string sSfM_Data_Filename;
-  std::string sMatchesDir, sMatchFilename;
+  std::string sMatchesDir, sMatchFilename, sFeaturesDir;
   std::string sOutDir = "";
   int iRotationAveragingMethod = int (ROTATION_AVERAGING_L2);
   int iTranslationAveragingMethod = int (TRANSLATION_AVERAGING_SOFTL1);
@@ -62,6 +62,7 @@ int main(int argc, char **argv)
   cmd.add( make_option('t', iTranslationAveragingMethod, "translationAveraging") );
   cmd.add( make_option('f', sIntrinsic_refinement_options, "refineIntrinsics") );
   cmd.add( make_switch('P', "prior_usage") );
+  cmd.add( make_option('F', sFeaturesDir, "features_dir") ); // CPM
 
   try {
     if (argc == 1) throw std::string("Invalid parameter.");
@@ -72,6 +73,7 @@ int main(int argc, char **argv)
     << "[-m|--matchdir] path to the matches that corresponds to the provided SfM_Data scene\n"
     << "[-o|--outdir] path where the output data will be stored\n"
     << "\n[Optional]\n"
+    << "[-F]--features_dir] use this directory for features (trailing @ means include parent directory)" 
     << "[-r|--rotationAveraging]\n"
       << "\t 1 -> L1 minimization\n"
       << "\t 2 -> L2 minimization (default)\n"
@@ -99,6 +101,8 @@ int main(int argc, char **argv)
     std::cerr << s << std::endl;
     return EXIT_FAILURE;
   }
+  if (sFeaturesDir.empty())
+    sFeaturesDir = sMatchesDir;
 
   if (iRotationAveragingMethod < ROTATION_AVERAGING_L1 ||
       iRotationAveragingMethod > ROTATION_AVERAGING_L2 )  {
@@ -141,7 +145,7 @@ int main(int argc, char **argv)
 
   // Features reading
   std::shared_ptr<Features_Provider> feats_provider = std::make_shared<Features_Provider>();
-  if (!feats_provider->load(sfm_data, sMatchesDir, regions_type)) {
+  if (!feats_provider->load(sfm_data, sFeaturesDir, regions_type)) {
     std::cerr << std::endl
       << "Invalid features." << std::endl;
     return EXIT_FAILURE;

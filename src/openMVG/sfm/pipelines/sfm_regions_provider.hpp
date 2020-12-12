@@ -24,6 +24,9 @@
 namespace openMVG {
 namespace sfm {
 
+const std::string generate_feature_path(const std::string& feat_directory, 
+  const std::string& sImageName, const std::string& extension);
+
 /// Abstract Regions provider
 /// Allow to load and return the regions related to a view
 struct Regions_Provider
@@ -115,9 +118,8 @@ public:
 #endif
       {
         const std::string sImageName = stlplus::create_filespec(sfm_data.s_root_path, iter->second->s_Img_path);
-        const std::string basename = stlplus::basename_part(sImageName);
-        const std::string featFile = stlplus::create_filespec(feat_directory, basename, ".feat");
-        const std::string descFile = stlplus::create_filespec(feat_directory, basename, ".desc");
+        const std::string featFile = openMVG::sfm::generate_feature_path(feat_directory, sImageName, ".feat");
+        const std::string descFile = openMVG::sfm::generate_feature_path(feat_directory, sImageName, ".desc");
 
         std::unique_ptr<features::Regions> regions_ptr(region_type->EmptyClone());
         if (!regions_ptr->Load(featFile, descFile))

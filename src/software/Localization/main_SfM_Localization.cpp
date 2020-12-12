@@ -62,6 +62,7 @@ int main(int argc, char **argv)
 
   std::string sSfM_Data_Filename;
   std::string sMatchesDir;
+  std::string sFeaturesDir;
   std::string sOutDir = "";
   std::string sMatchesOutDir;
   std::string sQueryDir;
@@ -90,6 +91,7 @@ int main(int argc, char **argv)
   cmd.add(make_option('R', resection_method, "resection_method"));
   cmd.add(make_option('I', sSfM_Data_Intrinsics_Filename, "input_intrinsics_file"));
   cmd.add(make_option('L', sUsed_Landmarks_Filename, "export_used_landmarks"));
+  cmd.add(make_option('F', sFeaturesDir, "features_dir") ); // CPM
 
 #ifdef OPENMVG_USE_OPENMP
   cmd.add(make_option('n', iNumThreads, "numThreads"));
@@ -114,6 +116,7 @@ int main(int argc, char **argv)
               << "  (the directory can also contain the images from the initial reconstruction)\n"
               << "\n"
               << "(optional)\n"
+              << "[-F]--features_dir] use this directory for features (trailing @ means include parent directory)" 
               << "[-r|--residual_error] upper bound of the residual error tolerance\n"
               << "[-s|--single_intrinsics] (switch) when switched on, the program will check if the input sfm_data\n"
               << "  contains a single intrinsics and, if so, take this value as intrinsics for the query images.\n"
@@ -143,6 +146,8 @@ int main(int argc, char **argv)
     std::cerr << s << std::endl;
     return EXIT_FAILURE;
   }
+  if (sFeaturesDir.empty())
+    sFeaturesDir = sMatchesDir;
 
   if (!isValid(openMVG::cameras::EINTRINSIC(i_User_camera_model)))
   {
@@ -222,7 +227,7 @@ int main(int argc, char **argv)
 
   // Load the SfM_Data region's views
   std::shared_ptr<Regions_Provider> regions_provider = std::make_shared<Regions_Provider>();
-  if (!regions_provider->load(sfm_data, sMatchesDir, regions_type, &progress))
+  if (!regions_provider->load(sfm_data, sFeaturesDir, regions_type, &progress))
   {
     std::cerr << std::endl
               << "Invalid regions." << std::endl;
@@ -370,8 +375,8 @@ int main(int argc, char **argv)
       }
 
       const std::string
-          sFeat = stlplus::create_filespec(sMatchesOutDir, stlplus::basename_part(sView_filename.c_str()), "feat"),
-          sDesc = stlplus::create_filespec(sMatchesOutDir, stlplus::basename_part(sView_filename.c_str()), "desc");
+          sFeat = openMVG::sfm::generate_feature_path(sMatchesOutDir, sView_filename.c_str(), ".feat"),
+          sDesc = openMVG::sfm::generate_feature_path(sMatchesOutDir, sView_filename.c_str(), ".desc");
 
       // Compute features and descriptors and save them if they don't exist yet
       if (!stlplus::file_exists(sFeat) || !stlplus::file_exists(sDesc))

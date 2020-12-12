@@ -74,6 +74,7 @@ int main(int argc, char **argv)
 
   std::string sSfM_Data_Filename;
   std::string sMatchesDirectory = "";
+  std::string sFeaturesDirectory = "";
   std::string sGeometricModel = "f";
   float fDistRatio = 0.8f;
   int iMatchingVideoMode = -1;
@@ -97,6 +98,7 @@ int main(int argc, char **argv)
   cmd.add( make_option('m', bGuided_matching, "guided_matching") );
   cmd.add( make_option('I', imax_iteration, "max_iteration") );
   cmd.add( make_option('c', ui_max_cache_size, "cache_size") );
+  cmd.add( make_option('F', sFeaturesDirectory, "features_dir") ); // CPM
 
 
   try {
@@ -107,6 +109,7 @@ int main(int argc, char **argv)
       << "[-i|--input_file] a SfM_Data file\n"
       << "[-o|--out_dir path] output path where computed are stored\n"
       << "\n[Optional]\n"
+      << "[-F]--features_dir] use this directory for features (trailing @ means include parent directory)" 
       << "[-f|--force] Force to recompute data]\n"
       << "[-r|--ratio] Distance ratio to discard non meaningful matches\n"
       << "   0.8: (default).\n"
@@ -146,12 +149,15 @@ int main(int argc, char **argv)
       std::cerr << s << std::endl;
       return EXIT_FAILURE;
   }
+  if (sFeaturesDirectory.empty())
+    sFeaturesDirectory = sMatchesDirectory;
 
   std::cout << " You called : " << "\n"
             << argv[0] << "\n"
             << "--input_file " << sSfM_Data_Filename << "\n"
             << "--out_dir " << sMatchesDirectory << "\n"
             << "Optional parameters:" << "\n"
+            << "--features_dir " << sFeaturesDirectory << "\n" 
             << "--force " << bForce << "\n"
             << "--ratio " << fDistRatio << "\n"
             << "--geometric_model " << sGeometricModel << "\n"
@@ -262,7 +268,7 @@ int main(int argc, char **argv)
   // Show the progress on the command line:
   C_Progress_display progress;
 
-  if (!regions_provider->load(sfm_data, sMatchesDirectory, regions_type, &progress)) {
+  if (!regions_provider->load(sfm_data, sFeaturesDirectory, regions_type, &progress)) {
     std::cerr << std::endl << "Invalid regions." << std::endl;
     return EXIT_FAILURE;
   }

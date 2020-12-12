@@ -16,6 +16,7 @@
 #include "openMVG/features/regions_factory_io.hpp"
 #include "openMVG/sfm/sfm_data.hpp"
 #include "openMVG/sfm/sfm_data_io.hpp"
+#include "openMVG/sfm/pipelines/sfm_features_provider.hpp"
 #include "openMVG/system/timer.hpp"
 
 #include "third_party/cmdLine/cmdLine.h"
@@ -162,7 +163,10 @@ int main(int argc, char **argv)
   using namespace openMVG::features;
   std::unique_ptr<Image_describer> image_describer;
 
-  const std::string sImage_describer = stlplus::create_filespec(sOutDir, "image_describer", "json");
+  std::string sOutDirSimple = sOutDir;
+  while (!sOutDirSimple.empty() && sOutDirSimple.back() == '@')
+    sOutDirSimple.pop_back();
+  const std::string sImage_describer = stlplus::create_filespec(sOutDirSimple, "image_describer", "json");
   if (!bForce && stlplus::is_file(sImage_describer))
   {
     // Dynamically load the image_describer from the file (will restore old used settings)
@@ -270,8 +274,8 @@ int main(int argc, char **argv)
       const View * view = iterViews->second.get();
       const std::string
         sView_filename = stlplus::create_filespec(sfm_data.s_root_path, view->s_Img_path),
-        sFeat = stlplus::create_filespec(sOutDir, stlplus::basename_part(sView_filename), "feat"),
-        sDesc = stlplus::create_filespec(sOutDir, stlplus::basename_part(sView_filename), "desc");
+        sFeat = openMVG::sfm::generate_feature_path(sOutDir, sView_filename, ".feat"),
+        sDesc = openMVG::sfm::generate_feature_path(sOutDir, sView_filename, ".desc");
 
       // If features or descriptors file are missing, compute them
       if (!preemptive_exit && (bForce || !stlplus::file_exists(sFeat) || !stlplus::file_exists(sDesc)))

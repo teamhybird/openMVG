@@ -9,8 +9,44 @@
 #include "openMVG/cameras/Camera_Intrinsics.hpp"
 #include "openMVG/sfm/sfm_data.hpp"
 
+#include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
+
 namespace openMVG {
 namespace sfm {
+
+// CPM: Allow feature paths to include parent paths if the feature directory has '@' at the end of it
+// so we can support video_a/frame_1.desc and video_b/frame_1.desc
+const std::string generate_feature_path(const std::string& feat_directory, 
+  const std::string& sImageName, const std::string& extension)
+{
+  std::string dir = feat_directory;
+  int nd = 0;
+  while (!dir.empty() && dir.back() == '@')
+  {
+    ++nd;
+    dir.pop_back();
+  }
+  if (nd)
+  {
+    std::vector<std::string> pth = stlplus::filespec_elements(sImageName);
+    int ioffset = pth.size() - nd - 1;
+    if (ioffset >= 0)
+    {
+      for (int i = 0; i < nd; ++i)
+      {
+        dir = stlplus::folder_append_separator(dir);
+        dir += pth[ioffset + i];
+      }
+    }
+    else
+    {
+      // Error
+    }
+  }
+  const std::string basename = stlplus::basename_part(sImageName);
+  const std::string featFile = stlplus::create_filespec(dir, basename, extension);
+  return featFile;
+}
 
 void GroupSharedIntrinsics(SfM_Data & sfm_data)
 {

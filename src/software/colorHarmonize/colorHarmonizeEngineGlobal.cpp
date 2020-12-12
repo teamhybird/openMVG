@@ -17,6 +17,7 @@
 
 #include "openMVG/sfm/sfm.hpp"
 #include "openMVG/graph/graph.hpp"
+#include "openMVG/sfm/pipelines/sfm_features_provider.hpp"
 
 #include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
 #include "third_party/vectorGraphics/svgDrawer.hpp"
@@ -496,8 +497,8 @@ bool ColorHarmonizationEngineGlobal::ReadInputData()
   {
     const size_t camIndex = i;
     if ( !loadFeatsFromFile(
-            stlplus::create_filespec( _sMatchesPath,
-                                      stlplus::basename_part( _vec_fileNames[ camIndex ] ),
+            openMVG::sfm::generate_feature_path( _sMatchesPath,
+                                       _vec_fileNames[ camIndex ] ,
                                       ".feat" ),
             _map_feats[ camIndex ] ) )
     {

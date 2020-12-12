@@ -44,10 +44,10 @@ public:
     if (it == end(cache_))
     {
       // Load the ressource link to this ID
-      const std::string id =
-        stlplus::create_filespec(feat_directory_, map_id_string_.at(x));
-      const std::string featFile = id + ".feat";
-      const std::string descFile = id + ".desc";
+      const std::string featFile =
+        openMVG::sfm::generate_feature_path(feat_directory_, map_id_string_.at(x), ".feat");
+      const std::string descFile =
+        openMVG::sfm::generate_feature_path(feat_directory_, map_id_string_.at(x), ".desc");
       ret.reset(region_type_->EmptyClone());
       if (ret->Load(featFile, descFile))
       {

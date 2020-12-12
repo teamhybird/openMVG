@@ -24,6 +24,9 @@
 namespace openMVG {
 namespace sfm {
 
+const std::string generate_feature_path(const std::string& feat_directory, 
+  const std::string& sImageName, const std::string& extension);
+
 /// Abstract PointFeature provider (read some feature and store them as PointFeature).
 /// Allow to load and return the features related to a view
 struct Features_Provider
@@ -53,8 +56,7 @@ struct Features_Provider
 #endif
       {
         const std::string sImageName = stlplus::create_filespec(sfm_data.s_root_path, iter->second->s_Img_path);
-        const std::string basename = stlplus::basename_part(sImageName);
-        const std::string featFile = stlplus::create_filespec(feat_directory, basename, ".feat");
+        const std::string featFile = openMVG::sfm::generate_feature_path(feat_directory, sImageName, ".feat");
 
         std::unique_ptr<features::Regions> regions(region_type->EmptyClone());
         if (!stlplus::file_exists(featFile) || !regions->LoadFeatures(featFile))
