@@ -290,16 +290,46 @@ int main(int argc, char **argv)
   // Since we have copied interesting data, release some memory
   regions_provider.reset();
 
+  // Do we want to include parent directories in the comparison?
+  int use_parents = 0;
+  if (!sFeaturesDir.empty() && sFeaturesDir.back() == '@')
+  {
+    ++use_parents;
+  }
+
   // list images from sfm_data in a vector
   std::vector<std::string> vec_image_original(sfm_data.GetViews().size());
   int n(-1);
-  std::generate(vec_image_original.begin(),
+  if (use_parents)
+  {
+    std::generate(vec_image_original.begin(),
+                vec_image_original.end(),
+                [&n, &sfm_data] {
+                  n++;
+                  auto pth = stlplus::filespec_elements(sfm_data.views.at(n)->s_Img_path);
+                  size_t npth = pth.size();
+                  if (npth >= 2)
+                  {
+                    return pth[npth-2] + "/" + pth[npth-1];
+                  }
+                  return std::string("");
+                });
+  }
+  else
+  {
+    std::generate(vec_image_original.begin(),
                 vec_image_original.end(),
                 [&n, &sfm_data] {
                   n++;
                   return stlplus::filename_part(sfm_data.views.at(n)->s_Img_path);
                 });
+  }
+  
+  std::cout << "There are " << vec_image_original.size() << " filenames in the (not localised) base set";
+  if (vec_image_original.size())
+    std::cout << ", e.g. "  << vec_image_original[0] << "\n";
 
+  
   // list images in query directory
   std::vector<std::string> vec_image;
 
@@ -309,9 +339,23 @@ int main(int argc, char **argv)
     sQueryDir = stlplus::folder_part(sQueryDir);
   }
   else
+  {
     vec_image = stlplus::folder_files(sQueryDir); // multiple files
+    if (use_parents)
+    {
+      auto pth = stlplus::folder_elements(sQueryDir);
+      size_t npth = pth.size();
+      if (npth >= 1)
+      {
+        std::string prefix = pth.back() + "/";
+        for (size_t i = 0; i < vec_image.size(); ++i)
+          vec_image[i] = prefix + vec_image[i];
+      }
+    }
+  }
 
   std::sort(vec_image.begin(), vec_image.end());
+  std::cout << "Querying " << vec_image.size() << " images in query directory " << sQueryDir << "\n";
 
   // find difference between two list of images
   std::vector<std::string> vec_image_new;
@@ -344,6 +388,7 @@ int main(int argc, char **argv)
   int total_num_images = 0;
   std::set<openMVG::IndexT> used_landmarks;
   std::set<openMVG::IndexT> whichfiles;
+  std::cout << "Processing " << vec_image_new.size() << " query images.\n";
 
 #ifdef OPENMVG_USE_OPENMP
   const unsigned int nb_max_thread = (iNumThreads == 0) ? 0 : omp_get_max_threads();
