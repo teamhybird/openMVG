@@ -61,7 +61,9 @@ bool ValidIds(const SfM_Data & sfm_data, ESfM_Data flags_part)
   {
     if (set_id_intrinsics.size() != reallyDefined_id_intrinsics.size())
     {
-      bRet = false;
+      // yeah nah, even if there is a spare intrinsic don't throw a hissy fit. Just a warning.
+      if (reallyDefined_id_intrinsics.size() == 0)
+        bRet = false;
       std::cout << "There is orphan intrinsics data: " << set_id_intrinsics.size()
          << " defined but " << reallyDefined_id_intrinsics.size() << " defined and wanted." << std::endl;
     }

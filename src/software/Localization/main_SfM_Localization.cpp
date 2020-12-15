@@ -341,17 +341,17 @@ int main(int argc, char **argv)
   else
   {
     vec_image = stlplus::folder_files(sQueryDir); // multiple files
-    if (use_parents)
-    {
-      auto pth = stlplus::folder_elements(sQueryDir);
-      size_t npth = pth.size();
-      if (npth >= 1)
-      {
-        std::string prefix = pth.back() + "/";
-        for (size_t i = 0; i < vec_image.size(); ++i)
-          vec_image[i] = prefix + vec_image[i];
-      }
-    }
+    // if (use_parents)
+    // {
+    //   auto pth = stlplus::folder_elements(sQueryDir);
+    //   size_t npth = pth.size();
+    //   if (npth >= 1)
+    //   {
+    //     std::string prefix = pth.back() + "/";
+    //     for (size_t i = 0; i < vec_image.size(); ++i)
+    //       vec_image[i] = prefix + vec_image[i];
+    //   }
+    // }
   }
 
   std::sort(vec_image.begin(), vec_image.end());
