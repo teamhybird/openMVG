@@ -67,13 +67,18 @@ int main(int argc, char **argv)
   std::string sMatchesOutDir;
   std::string sQueryDir;
   std::string sSfM_Data_Intrinsics_Filename;
-  std::string sUsed_Landmarks_Filename;
+  std::string sFilteredViewsFilename;
   double dMaxResidualError = std::numeric_limits<double>::infinity();
   int i_User_camera_model = cameras::PINHOLE_CAMERA_RADIAL3;
   bool bUseSingleIntrinsics = false;
   bool bExportStructure = false;
-  bool bExportUsedLandmarks = false;
   int resection_method = static_cast<int>(resection::SolverType::DEFAULT);
+  bool bExportFiltered = false;      // Export a list of relevant images
+  std::string sFilterImage;          // Filter only images within a radius of this named image
+  double filterRadius = 0;           // Radius in units
+  double filterPosX = 0;             // Filter only images within a radius of this fixed position (x,y,z)
+  double filterPosY = 0;
+  double filterPosZ = 0;
 
 #ifdef OPENMVG_USE_OPENMP
   int iNumThreads = 0;
@@ -82,16 +87,24 @@ int main(int argc, char **argv)
   cmd.add(make_option('i', sSfM_Data_Filename, "input_file"));
   cmd.add(make_option('m', sMatchesDir, "match_dir"));
   cmd.add(make_option('o', sOutDir, "out_dir"));
-  cmd.add(make_option('u', sMatchesOutDir, "match_out_dir"));
   cmd.add(make_option('q', sQueryDir, "query_image_dir"));
   cmd.add(make_option('r', dMaxResidualError, "residual_error"));
   cmd.add(make_option('c', i_User_camera_model, "camera_model"));
   cmd.add(make_switch('s', "single_intrinsics"));
   cmd.add(make_switch('e', "export_structure"));
   cmd.add(make_option('R', resection_method, "resection_method"));
+
+  cmd.add(make_option('F', sFeaturesDir, "features_dir"));
+  cmd.add(make_option('u', sMatchesOutDir, "match_out_dir"));
   cmd.add(make_option('I', sSfM_Data_Intrinsics_Filename, "input_intrinsics_file"));
-  cmd.add(make_option('L', sUsed_Landmarks_Filename, "export_used_landmarks"));
-  cmd.add(make_option('F', sFeaturesDir, "features_dir") ); // CPM
+  cmd.add(make_option('L', sFilteredViewsFilename, "export_filtered"));
+  cmd.add(make_switch('U', "filter_used_landmarks"));
+  cmd.add(make_option('D', filterRadius, "filter_radius"));
+  cmd.add(make_option('x', filterPosX, "filter_pos_x"));
+  cmd.add(make_option('y', filterPosY, "filter_pos_y"));
+  cmd.add(make_option('z', filterPosZ, "filter_pos_z"));
+  cmd.add(make_option('f', sFilterImage, "filter_image"));
+  cmd.add(make_switch('Q', "filter_queried"));
 
 #ifdef OPENMVG_USE_OPENMP
   cmd.add(make_option('n', iNumThreads, "numThreads"));
@@ -116,7 +129,7 @@ int main(int argc, char **argv)
               << "  (the directory can also contain the images from the initial reconstruction)\n"
               << "\n"
               << "(optional)\n"
-              << "[-F]--features_dir] use this directory for features (trailing @ means include parent directory)" 
+              << "[-F]--features_dir] use this directory for features (trailing @ means include parent directory)"
               << "[-r|--residual_error] upper bound of the residual error tolerance\n"
               << "[-s|--single_intrinsics] (switch) when switched on, the program will check if the input sfm_data\n"
               << "  contains a single intrinsics and, if so, take this value as intrinsics for the query images.\n"
@@ -140,14 +153,41 @@ int main(int argc, char **argv)
               << "[-n|--numThreads] number of thread(s)\n"
 #endif
               << "[-I|--input_intrinsics_file] (Hybird) path to a SfM_Data file containing intrinsics for all query images.\n"
-              << "[-L|--export_used_landmarks] (Hybird) path to a file listing which landmarks were used for all query images.\n"
+              << "(filtering)\n"
+              << "[-L|--export_filtered] (Hybird) path to a file listing files filtered according to the following options.\n"
+              << "[-U|--filter_used_landmarks] (Hybird) Filter only images with landmarks used in the query\n"
+              << "(nope) [-Q|--filter_queried] (Hybird) Filter only images within a radius of the queried images\n"
+              << "(nope) [-f|--filter_image] (Hybird) Filter only images within a radius of this named image\n"
+              << "[-D|--filter_radius] (Hybird) Distance/Radius in units\n"
+              << "[-x|--filter_pos_x] (Hybird) Filter only images within a radius of this fixed position (x,y,z)\n"
+              << "[-y|--filter_pos_y] (Hybird) (matches with -x) \n"
+              << "[-z|--filter_pos_z] (Hybird) (matches with -x) \n"
               << std::endl;
 
     std::cerr << s << std::endl;
     return EXIT_FAILURE;
   }
+  bool bFilterQueried = cmd.used('Q');       // Filter only images within a radius of the queried images
+  bool bFilterUsedLandmarks = cmd.used('U'); // Filter only images with landmarks used in the query
   if (sFeaturesDir.empty())
     sFeaturesDir = sMatchesDir;
+  int numxyz = cmd.used('x') + cmd.used('y') + cmd.used('z');
+  if (numxyz && numxyz != 3)
+  {
+    std::cerr << "\n  -x -y -z parmeters must be either all specified or none." << std::endl;
+    return EXIT_FAILURE;
+  }
+  int numr = int(numxyz == 3) + int(cmd.used('f')) + int(cmd.used('Q'));
+  if (numr > 1)
+  {
+    std::cerr << "\n  Only one of -x -f and -Q parameters can be specified." << std::endl;
+    return EXIT_FAILURE;
+  }
+  if (numr && !cmd.used('D'))
+  {
+    std::cerr << "\n  Options -x -f and -Q require a radius (-D) be specified." << std::endl;
+    return EXIT_FAILURE;
+  }
 
   if (!isValid(openMVG::cameras::EINTRINSIC(i_User_camera_model)))
   {
@@ -178,7 +218,7 @@ int main(int argc, char **argv)
 
   bUseSingleIntrinsics = cmd.used('s');
   bExportStructure = cmd.used('e');
-  bExportUsedLandmarks = cmd.used('L');
+  bExportFiltered = cmd.used('L');
 
   // ---------------
   // Initialization
@@ -303,33 +343,32 @@ int main(int argc, char **argv)
   if (use_parents)
   {
     std::generate(vec_image_original.begin(),
-                vec_image_original.end(),
-                [&n, &sfm_data] {
-                  n++;
-                  auto pth = stlplus::filespec_elements(sfm_data.views.at(n)->s_Img_path);
-                  size_t npth = pth.size();
-                  if (npth >= 2)
-                  {
-                    return pth[npth-2] + "/" + pth[npth-1];
-                  }
-                  return std::string("");
-                });
+                  vec_image_original.end(),
+                  [&n, &sfm_data] {
+                    n++;
+                    auto pth = stlplus::filespec_elements(sfm_data.views.at(n)->s_Img_path);
+                    size_t npth = pth.size();
+                    if (npth >= 2)
+                    {
+                      return pth[npth - 2] + "/" + pth[npth - 1];
+                    }
+                    return std::string("");
+                  });
   }
   else
   {
     std::generate(vec_image_original.begin(),
-                vec_image_original.end(),
-                [&n, &sfm_data] {
-                  n++;
-                  return stlplus::filename_part(sfm_data.views.at(n)->s_Img_path);
-                });
+                  vec_image_original.end(),
+                  [&n, &sfm_data] {
+                    n++;
+                    return stlplus::filename_part(sfm_data.views.at(n)->s_Img_path);
+                  });
   }
-  
+
   std::cout << "There are " << vec_image_original.size() << " filenames in the (not localised) base set";
   if (vec_image_original.size())
-    std::cout << ", e.g. "  << vec_image_original[0] << "\n";
+    std::cout << ", e.g. " << vec_image_original[0] << "\n";
 
-  
   // list images in query directory
   std::vector<std::string> vec_image;
 
@@ -387,7 +426,6 @@ int main(int argc, char **argv)
 
   int total_num_images = 0;
   std::set<openMVG::IndexT> used_landmarks;
-  std::set<openMVG::IndexT> whichfiles;
   std::cout << "Processing " << vec_image_new.size() << " query images.\n";
 
 #ifdef OPENMVG_USE_OPENMP
@@ -489,13 +527,13 @@ int main(int argc, char **argv)
     }
     else
     {
-      if (bExportUsedLandmarks)
+      if (bFilterUsedLandmarks)
 #ifdef OPENMVG_USE_OPENMP
 #pragma omp critical
 #endif
       {
-        std::cout << "Pt3d size=" << matching_data.pt3D.cols() << "*" << matching_data.pt3D.rows() 
-          << " Pt2d size=" << matching_data.pt2D.cols() << "*" << matching_data.pt2D.rows() << "\n"; 
+        std::cout << "Pt3d size=" << matching_data.pt3D.cols() << "*" << matching_data.pt3D.rows()
+                  << " Pt2d size=" << matching_data.pt2D.cols() << "*" << matching_data.pt2D.rows() << "\n";
         for (uint32_t idx : matching_data.vec_inliers)
         {
           uint32_t lm = matching_data.vec_landmarks[idx];
@@ -588,62 +626,75 @@ int main(int argc, char **argv)
   GroupSharedIntrinsics(sfm_data);
 
   std::cout << " Total poses found : " << vec_found_poses.size() << "/" << total_num_images << endl;
-  if (bExportUsedLandmarks)
+  if (bExportFiltered)
   {
-    for (openMVG::IndexT iLandmark : used_landmarks)
+    std::set<openMVG::IndexT> whichfiles;
+    openMVG::sfm::SfM_Data used;
+    used.s_root_path = sfm_data.s_root_path;
+
+    if (bFilterUsedLandmarks) // Filter the images with used landmarks
     {
-      if (sfm_data.structure.count(iLandmark))
+      for (openMVG::IndexT iLandmark : used_landmarks)
       {
-        const Landmark &lm = sfm_data.structure.at(iLandmark);
-        for (const auto &iObs : lm.obs)
+        if (sfm_data.structure.count(iLandmark))
         {
-          whichfiles.insert(iObs.first);
+          const Landmark &lm = sfm_data.structure.at(iLandmark);
+          for (const auto &iObs : lm.obs)
+          {
+            whichfiles.insert(iObs.first);
+          }
         }
       }
+      std::cout << " Total inlier landmarks found : " << used_landmarks.size() << " in " << whichfiles.size() << " images." << std::endl;
+      for (uint32_t iFile : whichfiles)
+      {
+        std::cout << "[" << iFile << "] ";
+      }
+      std::cout << "\n";
     }
-    std::cout << " Total inlier landmarks found : " << used_landmarks.size() << " in " << whichfiles.size() << " images." << std::endl;
-    for (uint32_t iFile : whichfiles)
+    else
     {
-      std::cout << "[" << iFile << "] ";
+      for (const auto &v : sfm_data.views)
+        whichfiles.insert(v.second->id_view);
     }
-    std::cout << "\n";
+    // Filter out the views by radius from a point, image or queried image
     {
-      openMVG::sfm::SfM_Data used;
-      used.s_root_path = sfm_data.s_root_path;
-      // Make the keys of the view contiguous by renumbering them
+      Vec3 pos;
+      pos << filterPosX, filterPosY, filterPosZ; // abuse the comma operator
+      std::set<openMVG::IndexT> goodfiles;
+      for (openMVG::IndexT iImage : whichfiles)
+      {
+        const auto view = sfm_data.views.at(iImage);
+        IndexT iPose = view->id_pose;
+        const auto& pose = sfm_data.poses.at(iPose);
+        double d = (pose.center() - pos).norm();
+        if (d <= filterRadius)
+          goodfiles.insert(iImage);
+      }
+      std::swap(whichfiles, goodfiles);
+    }
+
+    // Make the keys of the view contiguous by renumbering them
+    {
       std::map<IndexT, IndexT> renum;
       IndexT iKey = 0;
       for (openMVG::IndexT iImage : whichfiles)
       {
         renum[iImage] = iKey;
         // Clone the view so that we can safely renumber the id without corrupting the make sfm_data
-        used.views[iKey] = std::make_shared<View>(*sfm_data.views.at(iImage));
+        IndexT iPose = sfm_data.views[iImage]->id_pose;
+        used.views[iKey] = std::make_shared<openMVG::sfm::View>(*sfm_data.views.at(iImage));
         used.views[iKey]->id_view = iKey;
         used.views[iKey]->id_pose = iKey;
+        used.poses[iKey] = sfm_data.poses.at(iPose);
         ++iKey;
       }
-      for (openMVG::IndexT iInlier : used_landmarks)
-      {
-        if (sfm_data.structure.count(iInlier))
-        {
-          const openMVG::sfm::Landmark &lm = sfm_data.structure.at(iInlier);
-          openMVG::sfm::Landmark lm2;
-          lm2.X = lm.X;
-          for (const auto& oo : lm.obs)
-          {
-            IndexT iNew = renum[oo.first];
-            lm2.obs[iNew] = oo.second;
-          }
-          used.structure[iInlier] = lm2;
-        }
-      }
-      
-      used.intrinsics = sfm_data.intrinsics;
+    }
+    used.intrinsics = sfm_data.intrinsics;
 
-      if (!Save(used, sUsed_Landmarks_Filename.c_str(), ESfM_Data(VIEWS | STRUCTURE | INTRINSICS)))
-      {
-        std::cerr << "  Error writing used landmarks file\n";
-      }
+    if (!Save(used, sFilteredViewsFilename.c_str(), ESfM_Data(VIEWS | INTRINSICS | EXTRINSICS)))
+    {
+      std::cerr << "  Error writing used landmarks file\n";
     }
   }
 

@@ -36,6 +36,22 @@ Arguments description:
   - **[-e|--export_structure]** (switch) when switched on, the program will also export structure to output sfm_data while OFF will only export VIEWS, INTRINSICS and EXTRINSICS.
     (OFF by default)
   - **[-n|--numThreads]** number of thread(s)
+  - **[-c|--camera_model]** Camera model type for view with unknown intrinsic.
+  - **[-R|--resection_method]** resection/pose estimation method.
+
+  - **[-F|--features_dir]** (Hybird) use this directory for features (trailing @ means include parent directory) 
+  - **[-I|--input_intrinsics_file]** (Hybird) path to a SfM_Data file containing intrinsics for all query images.
+
+**Filtering parameters (Hybird):**
+
+  - **[-L|--export_filtered]** (Hybird) path to a file listing files filtered according to the following options.\n"
+  - **[-U|--filter_used_landmarks]** (Hybird) Filter only images with landmarks used in the query\n"
+  - **[-Q|--filter_queried]** (Hybird) Filter only images within a radius of the queried images\n"
+  - **[-f|--filter_image]** (Hybird) Filter only images within a radius of this named image\n"
+  - **[-D|--filter_radius]** (Hybird) Distance/Radius in units\n"
+  - **[-x|--filter_pos_x]** (Hybird) Filter only images within a radius of this fixed position (x,y,z)\n"
+  - **[-y|--filter_pos_y]** (Hybird) (matches with -x) \n"
+  - **[-z|--filter_pos_z]** (Hybird) (matches with -x) \n"
 
 .. code-block:: c++
 
